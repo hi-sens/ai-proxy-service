@@ -4,6 +4,11 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from src.infrastructure.persistence.database import Base
 from src.infrastructure.config.settings import get_settings
 
+# 确保所有 ORM 模型都被导入，使 Base.metadata 包含所有表
+import src.infrastructure.persistence.models.user_model  # noqa: F401
+import src.infrastructure.persistence.models.api_key_model  # noqa: F401
+import src.infrastructure.persistence.models.token_usage_model  # noqa: F401
+
 settings = get_settings()
 
 

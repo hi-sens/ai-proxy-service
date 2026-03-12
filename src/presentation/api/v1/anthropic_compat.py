@@ -2,8 +2,9 @@
 
 鉴权流程：
   1. 从请求头提取系统用户 API Key（Authorization: Bearer <sk-xxx> 或 x-api-key: <sk-xxx>）
-  2. 通过 ChatUseCase 验证该 Key 是否为系统内有效 Key（sha256 hash 比对数据库）
+  2. 通过 ApiKeyRepository 验证该 Key 是否为系统内有效 Key（sha256 hash 比对数据库）
   3. 鉴权通过后，用 .env 中的 ANTHROPIC_API_KEY 替换，透传到 Anthropic 官方 API
+  4. 非流式响应：解析返回体中的 usage 字段，写入 token_usages 表
 
 路由映射（/anthropic 前缀 -> Anthropic 官方端点）：
   ANY /anthropic/{path:path} -> ANY {ANTHROPIC_BASE_URL}/{path}
@@ -19,10 +20,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from src.domain.api_key.aggregate import ApiKey
+from src.domain.token_usage.aggregate import TokenUsage
 from src.infrastructure.config.settings import get_settings
 from src.infrastructure.persistence.repositories.api_key_repository import ApiKeyRepository
+from src.infrastructure.persistence.repositories.token_usage_repository import TokenUsageRepository
 
-from ..dependencies import get_api_key_repository
+from ..dependencies import get_api_key_repository, get_token_usage_repository
 
 router = APIRouter(tags=["anthropic-proxy"])
 
@@ -44,7 +48,7 @@ _HOP_BY_HOP_HEADERS = frozenset({
 
 
 # ---------------------------------------------------------------------------
-# 鉴权：验证系统用户 API Key
+# 鉴权：验证系统用户 API Key，返回 ApiKey 聚合根
 # ---------------------------------------------------------------------------
 
 def _get_raw_key(
@@ -72,8 +76,8 @@ def _get_raw_key(
 async def _verify_system_api_key(
     plain_key: str,
     api_key_repo: ApiKeyRepository,
-) -> None:
-    """验证系统用户 API Key 是否有效（sha256 hash 比对数据库）。"""
+) -> ApiKey:
+    """验证系统用户 API Key 是否有效，返回 ApiKey 聚合根。"""
     key_hash = hashlib.sha256(plain_key.encode()).hexdigest()
     api_key = await api_key_repo.find_by_hash(key_hash)
 
@@ -100,6 +104,51 @@ async def _verify_system_api_key(
                 },
             },
         )
+    return api_key
+
+
+# ---------------------------------------------------------------------------
+# Token 计费：从响应体提取 usage 并持久化
+# ---------------------------------------------------------------------------
+
+async def _record_token_usage(
+    api_key: ApiKey,
+    model: str,
+    resp_body: dict,
+    usage_repo: TokenUsageRepository,
+) -> None:
+    """从 Anthropic 响应体提取 usage，写入 token_usages 表。
+
+    Anthropic Messages API 响应结构：
+      {"usage": {"input_tokens": N, "output_tokens": M}, "model": "..."}
+    """
+    usage = resp_body.get("usage", {})
+    if not usage:
+        return
+
+    # Anthropic 用 input_tokens / output_tokens；兼容 OpenAI 的 prompt_tokens / completion_tokens
+    prompt_tokens = int(
+        usage.get("input_tokens") or usage.get("prompt_tokens") or 0
+    )
+    completion_tokens = int(
+        usage.get("output_tokens") or usage.get("completion_tokens") or 0
+    )
+    total_tokens = int(
+        usage.get("total_tokens") or (prompt_tokens + completion_tokens)
+    )
+
+    # 取响应体中的实际模型名（可能比请求时更精确）
+    actual_model = resp_body.get("model") or model
+
+    record = TokenUsage.record(
+        user_id=api_key.user_id,
+        api_key_id=api_key.id,
+        model=actual_model,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+    )
+    await usage_repo.save(record)
 
 
 # ---------------------------------------------------------------------------
@@ -133,21 +182,32 @@ def _is_stream_request(request: Request, body: bytes) -> bool:
     return False
 
 
+def _get_request_model(body: bytes) -> str:
+    """从请求体中提取 model 字段，用于 token 记录的 fallback。"""
+    try:
+        return str(json.loads(body).get("model", "unknown"))
+    except Exception:
+        return "unknown"
+
+
 async def _proxy(
     method: str,
     upstream_path: str,
     request: Request,
     body: bytes,
-    api_key: str,
+    api_key_entity: ApiKey,
+    anthropic_api_key: str,
     base_url: str,
+    usage_repo: TokenUsageRepository,
 ) -> StreamingResponse | JSONResponse:
     base = base_url.rstrip("/")
     url = f"{base}/{upstream_path.lstrip('/')}"
-    headers = _build_proxy_headers(request, api_key)
+    headers = _build_proxy_headers(request, anthropic_api_key)
     params = dict(request.query_params)
     stream = _is_stream_request(request, body)
 
     if stream:
+        # 流式模式：直接透传字节流，不统计 token（SSE 格式解析复杂度高）
         async def generate() -> AsyncIterator[bytes]:
             async with httpx.AsyncClient(timeout=None) as client:
                 async with client.stream(
@@ -170,6 +230,7 @@ async def _proxy(
             },
         )
 
+    # 非流式：完整拿到响应后解析 usage
     async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.request(
             method,
@@ -189,6 +250,15 @@ async def _proxy(
         resp_body = resp.json()
     except Exception:
         resp_body = resp.text
+
+    # 仅在成功响应时记录 token 消耗
+    if resp.status_code == 200 and isinstance(resp_body, dict):
+        request_model = _get_request_model(body)
+        try:
+            await _record_token_usage(api_key_entity, request_model, resp_body, usage_repo)
+        except Exception:
+            # token 记录失败不影响正常响应
+            pass
 
     return JSONResponse(
         content=resp_body,
@@ -211,16 +281,18 @@ async def proxy_anthropic(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     api_key_repo: ApiKeyRepository = Depends(get_api_key_repository),
+    usage_repo: TokenUsageRepository = Depends(get_token_usage_repository),
 ) -> Response:
     """通用透传：验证系统用户 API Key 后，用 .env 中的 ANTHROPIC_API_KEY 转发到上游。
 
     客户端传入的是系统颁发的 API Key（sk-xxx），代理替换为真实 Anthropic Key 后转发。
+    非流式调用会自动统计并记录 token 消耗。
     """
     # 1. 提取客户端传来的系统 API Key
     plain_key = _get_raw_key(credentials, request)
 
-    # 2. 验证系统 API Key 有效性
-    await _verify_system_api_key(plain_key, api_key_repo)
+    # 2. 验证系统 API Key 有效性，取回聚合根
+    api_key_entity = await _verify_system_api_key(plain_key, api_key_repo)
 
     # 3. 读取 .env 中的 Anthropic 配置
     settings = get_settings()
@@ -239,13 +311,15 @@ async def proxy_anthropic(
             },
         )
 
-    # 4. 透传请求
+    # 4. 透传请求（非流式自动记录 token 消耗）
     body = await request.body()
     return await _proxy(
         method=request.method,
         upstream_path=path,
         request=request,
         body=body,
-        api_key=anthropic_api_key,
+        api_key_entity=api_key_entity,
+        anthropic_api_key=anthropic_api_key,
         base_url=anthropic_base_url,
+        usage_repo=usage_repo,
     )

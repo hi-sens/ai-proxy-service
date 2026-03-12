@@ -8,6 +8,7 @@ from .api.v1.anthropic_compat import router as anthropic_compat_router
 from .api.v1.api_keys import router as api_keys_router
 from .api.v1.auth import router as auth_router
 from .api.v1.llm import router as llm_router
+from .api.v1.token_usage import router as token_usage_router
 
 settings = get_settings()
 
@@ -32,6 +33,7 @@ app.include_router(auth_router)
 app.include_router(api_keys_router)
 app.include_router(llm_router)
 app.include_router(anthropic_compat_router)  # Anthropic Messages API 兼容层
+app.include_router(token_usage_router)       # Token 消耗计费查询
 
 
 def custom_openapi() -> dict:
@@ -87,8 +89,8 @@ def custom_openapi() -> dict:
                 continue
             tags = operation.get("tags", [])
 
-            if "llm" in tags:
-                # LLM 接口：通过 x-api-key header 鉴权
+            if "llm" in tags or "token-usage" in tags:
+                # LLM 接口 / token 计费查询：通过 x-api-key header 鉴权
                 operation["security"] = [{"LLMApiKey": []}]
             elif "auth" in tags:
                 # auth 接口：无需鉴权

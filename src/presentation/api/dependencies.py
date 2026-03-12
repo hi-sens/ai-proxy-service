@@ -13,6 +13,7 @@ from src.infrastructure.auth.password_hasher import PasswordHasher
 from src.infrastructure.llm.litellm_service import LiteLLMService
 from src.infrastructure.persistence.database import get_db_session
 from src.infrastructure.persistence.repositories.api_key_repository import ApiKeyRepository
+from src.infrastructure.persistence.repositories.token_usage_repository import TokenUsageRepository
 from src.infrastructure.persistence.repositories.user_repository import UserRepository
 
 _bearer = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -65,11 +66,18 @@ async def get_revoke_api_key_use_case(
     return RevokeApiKeyUseCase(api_key_repo)
 
 
+async def get_token_usage_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> TokenUsageRepository:
+    return TokenUsageRepository(session)
+
+
 async def get_chat_use_case(
     api_key_repo: ApiKeyRepository = Depends(get_api_key_repository),
     llm_service: LiteLLMService = Depends(get_llm_service),
+    token_usage_repo: TokenUsageRepository = Depends(get_token_usage_repository),
 ) -> ChatUseCase:
-    return ChatUseCase(api_key_repo, llm_service)
+    return ChatUseCase(api_key_repo, llm_service, token_usage_repo)
 
 
 # ---------- JWT 认证依赖 ----------
