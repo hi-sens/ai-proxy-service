@@ -4,7 +4,7 @@ services:
   # PostgreSQL数据库
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: ai-agent-postgres
+    container_name: ai-proxy-postgres
     environment:
       POSTGRES_DB: ai_agent_db
       POSTGRES_USER: agent_user
@@ -22,7 +22,7 @@ services:
   # Redis缓存
   redis:
     image: redis:7-alpine
-    container_name: ai-agent-redis
+    container_name: ai-proxy-redis
     ports:
       - "6379:6379"
     volumes:
@@ -37,7 +37,7 @@ services:
   # Ollama本地模型服务
   ollama:
     image: ollama/ollama:latest
-    container_name: ai-agent-ollama
+    container_name: ai-proxy-ollama
     ports:
       - "11434:11434"
     volumes:
@@ -53,7 +53,7 @@ services:
   # LiteLLM统一网关
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
-    container_name: ai-agent-litellm
+    container_name: ai-proxy-litellm
     ports:
       - "4000:4000"
     volumes:
@@ -72,4 +72,4 @@ volumes:
 
 networks:
   default:
-    name: ai-agent-network
+    name: ai-proxy-network

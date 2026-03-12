@@ -52,7 +52,7 @@ make pre-commit   # install pre-commit hooks
 ```bash
 make docker-up        # start PostgreSQL, Redis, Ollama, LiteLLM
 make init-db          # create database tables
-docker exec -it ai-agent-ollama ollama pull qwen2.5:14b
+docker exec -it ai-proxy-ollama ollama pull qwen2.5:14b
 ```
 
 ### Running the Application

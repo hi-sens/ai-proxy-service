@@ -56,7 +56,7 @@ bash scripts/setup.sh
 
 ```bash
 # 克隆项目
-cd ai-agent-service
+cd ai-proxy-service
 
 # 创建虚拟环境
 python3.11 -m venv venv
@@ -111,10 +111,10 @@ python scripts/init_db.py
 
 ```bash
 # 下载Qwen模型
-docker exec -it ai-agent-ollama ollama pull qwen2.5:14b
+docker exec -it ai-proxy-ollama ollama pull qwen2.5:14b
 
 # 或下载Llama模型
-docker exec -it ai-agent-ollama ollama pull llama3.2
+docker exec -it ai-proxy-ollama ollama pull llama3.2
 ```
 
 #### 6. 启动应用
@@ -160,7 +160,7 @@ curl -X POST "http://localhost:8000/api/v1/agents/{agent_id}/execute" \
 ## 项目结构
 
 ```
-ai-agent-service/
+ai-proxy-service/
 ├── src/
 │   ├── presentation/      # 表现层：FastAPI路由、DTO
 │   ├── application/       # 应用层：用例、应用服务

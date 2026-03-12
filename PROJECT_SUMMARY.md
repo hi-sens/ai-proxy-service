@@ -157,7 +157,7 @@ python scripts/init_db.py
 
 ### 3. 下载模型
 ```bash
-docker exec -it ai-agent-ollama ollama pull qwen2.5:14b
+docker exec -it ai-proxy-ollama ollama pull qwen2.5:14b
 ```
 
 ### 4. 启动应用

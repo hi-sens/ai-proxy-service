@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ai-agent-service"
+name = "ai-proxy-service"
 version = "0.1.0"
 description = "AI Agent Gateway Service with DDD Architecture"
 authors = ["dev"]

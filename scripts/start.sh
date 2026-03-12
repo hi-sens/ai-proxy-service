@@ -43,7 +43,7 @@ echo "是否下载Ollama模型？(y/n)"
 read -r download_model
 if [ "$download_model" = "y" ]; then
     echo "下载Qwen模型..."
-    docker exec -it ai-agent-ollama ollama pull qwen2.5:14b
+    docker exec -it ai-proxy-ollama ollama pull qwen2.5:14b
 fi
 
 # 启动应用
