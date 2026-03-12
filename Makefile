@@ -1,7 +1,8 @@
-.PHONY: help install dev-install format lint type-check test clean docker-up docker-down init-db
+.PHONY: help install dev-install format lint type-check test clean docker-up docker-down init-db run
 
 help:
 	@echo "可用命令："
+	@echo "  make run            - 启动服务（加载 .env 配置）"
 	@echo "  make install        - 安装生产依赖"
 	@echo "  make dev-install    - 安装开发依赖"
 	@echo "  make format         - 格式化代码（autoflake + isort + black）"
@@ -14,6 +15,10 @@ help:
 	@echo "  make init-db        - 初始化数据库"
 	@echo "  make pre-commit     - 安装 pre-commit hooks"
 	@echo "  make clean          - 清理缓存文件"
+
+run:
+	@echo "启动服务（加载 .env 配置）..."
+	dotenv -f .env run -- python -m src.presentation.main
 
 install:
 	pip install -r requirements.txt
