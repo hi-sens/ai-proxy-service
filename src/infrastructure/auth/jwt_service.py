@@ -1,7 +1,8 @@
 """JWT 服务"""
 from datetime import datetime, timedelta
-from typing import Optional
+
 import jwt
+
 from ..config.settings import get_settings
 
 settings = get_settings()
@@ -20,7 +21,7 @@ class JWTService:
         }
         return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
-    def decode_token(self, token: str) -> Optional[str]:
+    def decode_token(self, token: str) -> str | None:
         """解析 JWT，返回 user_id；无效则返回 None"""
         try:
             payload = jwt.decode(

@@ -1,9 +1,11 @@
 """LLM 代理调用用例"""
 import hashlib
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Dict, List, Optional
-from src.domain.services.llm_service import ILLMService
+from typing import Any
+
 from src.domain.api_key.repository import IApiKeyRepository
+from src.domain.services.llm_service import ILLMService
 from src.domain.shared.exceptions import TokenInvalidException, TokenRevokedException
 
 
@@ -12,9 +14,9 @@ class ChatCommand:
     """LLM 调用命令"""
     plain_key: str             # 请求携带的明文 API Key
     model: str                 # 模型名称
-    messages: List[Dict[str, Any]]
+    messages: list[dict[str, Any]]
     temperature: float = 0.7
-    max_tokens: Optional[int] = None
+    max_tokens: int | None = None
 
 
 @dataclass
@@ -22,7 +24,7 @@ class ChatResult:
     """LLM 调用结果"""
     content: str
     model: str
-    usage: Dict[str, Any] = field(default_factory=dict)
+    usage: dict[str, Any] = field(default_factory=dict)
 
 
 class ChatUseCase:

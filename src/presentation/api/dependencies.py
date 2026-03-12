@@ -2,17 +2,18 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.persistence.database import get_db_session
-from src.infrastructure.persistence.repositories.user_repository import UserRepository
-from src.infrastructure.persistence.repositories.api_key_repository import ApiKeyRepository
-from src.infrastructure.llm.litellm_service import LiteLLMService
-from src.infrastructure.auth.password_hasher import PasswordHasher
-from src.infrastructure.auth.jwt_service import JWTService
-from src.application.use_cases.user.register_user import RegisterUserUseCase
-from src.application.use_cases.user.login_user import LoginUserUseCase
+
 from src.application.use_cases.api_key.create_api_key import CreateApiKeyUseCase
 from src.application.use_cases.api_key.revoke_api_key import RevokeApiKeyUseCase
 from src.application.use_cases.llm.chat import ChatUseCase
+from src.application.use_cases.user.login_user import LoginUserUseCase
+from src.application.use_cases.user.register_user import RegisterUserUseCase
+from src.infrastructure.auth.jwt_service import JWTService
+from src.infrastructure.auth.password_hasher import PasswordHasher
+from src.infrastructure.llm.litellm_service import LiteLLMService
+from src.infrastructure.persistence.database import get_db_session
+from src.infrastructure.persistence.repositories.api_key_repository import ApiKeyRepository
+from src.infrastructure.persistence.repositories.user_repository import UserRepository
 
 _bearer = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 _jwt_service = JWTService()

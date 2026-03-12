@@ -1,6 +1,7 @@
 """LLM 领域服务接口"""
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncIterator
+from typing import Any
 
 
 class ILLMService(ABC):
@@ -17,10 +18,10 @@ class ILLMService(ABC):
     async def chat(
         self,
         model: str,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        max_tokens: int | None = None,
+    ) -> dict[str, Any]:
         """
         调用大模型（非流式）
 
@@ -39,9 +40,9 @@ class ILLMService(ABC):
     def chat_stream(
         self,
         model: str,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
     ) -> AsyncIterator[str]:
         """
         流式调用大模型，逐块 yield 文本片段
@@ -50,7 +51,7 @@ class ILLMService(ABC):
         ...
 
     @abstractmethod
-    async def list_models(self) -> List[str]:
+    async def list_models(self) -> list[str]:
         """
         获取当前可用模型列表（本地 + 云端）
         """

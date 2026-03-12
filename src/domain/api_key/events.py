@@ -1,7 +1,8 @@
 """ApiKey 领域事件"""
 from dataclasses import dataclass, field
 from datetime import datetime
-from ..shared.value_objects import UserId, TokenId
+
+from ..shared.value_objects import TokenId, UserId
 
 
 @dataclass(frozen=True)

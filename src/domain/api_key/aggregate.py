@@ -1,11 +1,10 @@
 """ApiKey 聚合根"""
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional
-from ..shared.value_objects import TokenId, UserId, Timestamp
-from ..shared.exceptions import TokenRevokedException
+
+from ..shared.value_objects import Timestamp, TokenId, UserId
+from .events import ApiKeyCreated, ApiKeyRevoked, DomainEvent
 from .value_objects import ApiKeyStatus
-from .events import DomainEvent, ApiKeyCreated, ApiKeyRevoked
 
 
 @dataclass
@@ -26,12 +25,12 @@ class ApiKey:
     name: str
     key_hash: str
     status: ApiKeyStatus
-    expires_at: Optional[Timestamp]
+    expires_at: Timestamp | None
     created_at: Timestamp
     updated_at: Timestamp
-    _events: List[DomainEvent] = field(default_factory=list, init=False, repr=False)
+    _events: list[DomainEvent] = field(default_factory=list, init=False, repr=False)
     # 仅在创建时持有明文，用于一次性返回给用户
-    _plain_key: Optional[str] = field(default=None, init=False, repr=False)
+    _plain_key: str | None = field(default=None, init=False, repr=False)
 
     @classmethod
     def create(
@@ -40,7 +39,7 @@ class ApiKey:
         name: str,
         key_hash: str,
         plain_key: str,
-        expires_at: Optional[datetime] = None,
+        expires_at: datetime | None = None,
     ) -> 'ApiKey':
         """
         工厂方法 - 创建新 API Key
@@ -83,7 +82,7 @@ class ApiKey:
         return True
 
     @property
-    def plain_key(self) -> Optional[str]:
+    def plain_key(self) -> str | None:
         """明文 API Key（仅创建后可读一次）"""
         return self._plain_key
 
@@ -91,7 +90,7 @@ class ApiKey:
         self._events.append(event)
 
     @property
-    def events(self) -> List[DomainEvent]:
+    def events(self) -> list[DomainEvent]:
         return self._events.copy()
 
     def clear_events(self) -> None:

@@ -1,10 +1,10 @@
 """User聚合根"""
 from dataclasses import dataclass, field
-from typing import List
-from ..shared.value_objects import UserId, Timestamp
+
 from ..shared.exceptions import InvalidUserStateException
+from ..shared.value_objects import Timestamp, UserId
+from .events import DomainEvent, UserDeactivated, UserRegistered
 from .value_objects import Email, HashedPassword
-from .events import DomainEvent, UserRegistered, UserDeactivated
 
 
 @dataclass
@@ -27,7 +27,7 @@ class User:
     is_active: bool
     created_at: Timestamp
     updated_at: Timestamp
-    _events: List[DomainEvent] = field(default_factory=list, init=False, repr=False)
+    _events: list[DomainEvent] = field(default_factory=list, init=False, repr=False)
 
     @classmethod
     def register(
@@ -70,7 +70,7 @@ class User:
         self._events.append(event)
 
     @property
-    def events(self) -> List[DomainEvent]:
+    def events(self) -> list[DomainEvent]:
         return self._events.copy()
 
     def clear_events(self) -> None:

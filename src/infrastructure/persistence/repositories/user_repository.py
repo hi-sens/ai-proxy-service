@@ -1,13 +1,15 @@
 """User 仓储实现"""
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domain.shared.value_objects import Timestamp, UserId
 from src.domain.user.aggregate import User
 from src.domain.user.repository import IUserRepository
 from src.domain.user.value_objects import Email, HashedPassword
-from src.domain.shared.value_objects import UserId, Timestamp
+
 from ..models.user_model import UserModel
 
 
@@ -34,14 +36,14 @@ class UserRepository(IUserRepository):
 
         await self._session.commit()
 
-    async def find_by_id(self, user_id: UserId) -> Optional[User]:
+    async def find_by_id(self, user_id: UserId) -> User | None:
         """根据ID查找用户"""
         stmt = select(UserModel).where(UserModel.id == user_id.value)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
-    async def find_by_email(self, email: Email) -> Optional[User]:
+    async def find_by_email(self, email: Email) -> User | None:
         """根据邮箱查找用户"""
         stmt = select(UserModel).where(UserModel.email == str(email))
         result = await self._session.execute(stmt)
@@ -54,7 +56,7 @@ class UserRepository(IUserRepository):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
-    async def find_by_username(self, username: str) -> Optional[User]:
+    async def find_by_username(self, username: str) -> User | None:
         """根据用户名查找用户"""
         stmt = select(UserModel).where(UserModel.username == username)
         result = await self._session.execute(stmt)

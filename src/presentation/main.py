@@ -2,11 +2,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from .api.v1.auth import router as auth_router
-from .api.v1.api_keys import router as api_keys_router
-from .api.v1.llm import router as llm_router
-from .api.v1.anthropic_compat import router as anthropic_compat_router
+
 from ..infrastructure.config.settings import get_settings
+from .api.v1.anthropic_compat import router as anthropic_compat_router
+from .api.v1.api_keys import router as api_keys_router
+from .api.v1.auth import router as auth_router
+from .api.v1.llm import router as llm_router
 
 settings = get_settings()
 
@@ -21,7 +22,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,7 +34,7 @@ app.include_router(llm_router)
 app.include_router(anthropic_compat_router)  # Anthropic Messages API 兼容层
 
 
-def custom_openapi():
+def custom_openapi() -> dict:
     if app.openapi_schema:
         return app.openapi_schema
 
@@ -103,7 +104,7 @@ def custom_openapi():
     return schema
 
 
-app.openapi = custom_openapi
+app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
 @app.get("/")

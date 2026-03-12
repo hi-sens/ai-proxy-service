@@ -7,9 +7,13 @@
 绕过系统代理：设置 NO_PROXY 环境变量，LiteLLM 内部 httpx 会跳过代理。
 """
 import os
-from typing import Any, AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncIterator
+from typing import Any
+
 import litellm
+
 from src.domain.services.llm_service import ILLMService
+
 from ..config.settings import get_settings
 
 settings = get_settings()
@@ -37,7 +41,7 @@ class LiteLLMService(ILLMService):
     def _is_local_model(self, model: str) -> bool:
         return model in settings.local_models or model.startswith("ollama/")
 
-    def _resolve_model_and_kwargs(self, model: str) -> Dict[str, Any]:
+    def _resolve_model_and_kwargs(self, model: str) -> dict[str, Any]:
         """将裸模型名解析为 LiteLLM model 字符串 + 额外 kwargs"""
         if self._is_local_model(model):
             bare = model.removeprefix("ollama/")
@@ -56,13 +60,13 @@ class LiteLLMService(ILLMService):
     async def chat(
         self,
         model: str,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        max_tokens: int | None = None,
+    ) -> dict[str, Any]:
         """非流式调用"""
         extra = self._resolve_model_and_kwargs(model)
-        kwargs: Dict[str, Any] = {
+        kwargs: dict[str, Any] = {
             **extra,
             "messages": messages,
             "temperature": temperature,
@@ -84,13 +88,13 @@ class LiteLLMService(ILLMService):
     async def chat_stream(
         self,
         model: str,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
     ) -> AsyncIterator[str]:
         """流式调用，逐块 yield 文本片段"""
         extra = self._resolve_model_and_kwargs(model)
-        kwargs: Dict[str, Any] = {
+        kwargs: dict[str, Any] = {
             **extra,
             "messages": messages,
             "temperature": temperature,
@@ -104,6 +108,6 @@ class LiteLLMService(ILLMService):
             if delta and delta.content:
                 yield delta.content
 
-    async def list_models(self) -> List[str]:
+    async def list_models(self) -> list[str]:
         """获取可用模型列表（来自配置）"""
         return settings.available_models

@@ -1,6 +1,6 @@
 """ApiKey 仓储接口"""
 from abc import ABC, abstractmethod
-from typing import Optional, List
+
 from ..shared.value_objects import TokenId, UserId
 from .aggregate import ApiKey
 
@@ -19,17 +19,17 @@ class IApiKeyRepository(ABC):
         ...
 
     @abstractmethod
-    async def find_by_id(self, api_key_id: TokenId) -> Optional[ApiKey]:
+    async def find_by_id(self, api_key_id: TokenId) -> ApiKey | None:
         """根据ID查找 API Key"""
         ...
 
     @abstractmethod
-    async def find_by_hash(self, key_hash: str) -> Optional[ApiKey]:
+    async def find_by_hash(self, key_hash: str) -> ApiKey | None:
         """根据哈希查找 API Key（用于鉴权）"""
         ...
 
     @abstractmethod
-    async def find_by_user(self, user_id: UserId) -> List[ApiKey]:
+    async def find_by_user(self, user_id: UserId) -> list[ApiKey]:
         """查找用户所有 API Key"""
         ...
 

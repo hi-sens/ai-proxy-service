@@ -1,6 +1,6 @@
 """应用配置"""
 from functools import lru_cache
-from typing import List
+
 from pydantic_settings import BaseSettings
 
 
@@ -28,13 +28,13 @@ class Settings(BaseSettings):
 
     # Anthropic API Key 和上游地址（Claude）
     anthropic_api_key: str = ""
-    anthropic_base_url: str = "https://api.anthropic.com"
+    anthropic_base_url: str = "http://claude.deepmanufactory.com"
 
     # API 模型的 base_url 映射（ollama/ 开头的模型自动路由，无需配置）
     # 格式：{"模型名": "base_url"}
     # 示例：{"claude-3-5-sonnet-20241022": "https://api.anthropic.com"}
     model_api_bases: dict = {
-        "claude-sonnet-4-6": "http://claude.deepmanufactory.com/",
+        "claude-sonnet-4-6": "http://claude.deepmanufactory.com",
     }
 
     # JWT 配置
@@ -43,13 +43,13 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 天
 
     # 本地 Ollama 模型列表（业务方用裸名如 "qwen2.5:14b"，自动补 ollama/ 前缀）
-    local_models: List[str] = [
+    local_models: list[str] = [
         "qwen2.5:14b",
         "llama3.2",
     ]
 
     # 可用模型列表（本地 + 云端，对外暴露的名称）
-    available_models: List[str] = [
+    available_models: list[str] = [
         "qwen2.5:14b",
         "llama3.2",
         "claude-sonnet-4-6",
@@ -59,10 +59,11 @@ class Settings(BaseSettings):
         "env_file": ".env",
         "case_sensitive": False,
         "extra": "ignore",
+        "protected_namespaces": ("settings_",),
     }
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """获取配置单例"""
     return Settings()

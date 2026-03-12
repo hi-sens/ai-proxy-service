@@ -1,39 +1,48 @@
 """API Keys 路由 - 创建、列表、撤销"""
 from datetime import datetime
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from src.application.use_cases.api_key.create_api_key import CreateApiKeyUseCase, CreateApiKeyCommand
-from src.application.use_cases.api_key.revoke_api_key import RevokeApiKeyUseCase, RevokeApiKeyCommand
-from ..dependencies import (
-    get_create_api_key_use_case,
-    get_revoke_api_key_use_case,
-    get_current_user_id,
-    get_api_key_repository,
+
+from src.application.use_cases.api_key.create_api_key import (
+    CreateApiKeyCommand,
+    CreateApiKeyUseCase,
 )
-from src.domain.shared.exceptions import TokenNotFoundException, InvalidUserStateException
+from src.application.use_cases.api_key.revoke_api_key import (
+    RevokeApiKeyCommand,
+    RevokeApiKeyUseCase,
+)
+from src.domain.shared.exceptions import InvalidUserStateException, TokenNotFoundException
 from src.domain.shared.value_objects import UserId
+from src.infrastructure.persistence.repositories.api_key_repository import ApiKeyRepository
+
+from ..dependencies import (
+    get_api_key_repository,
+    get_create_api_key_use_case,
+    get_current_user_id,
+    get_revoke_api_key_use_case,
+)
 
 router = APIRouter(prefix="/api/v1/api-keys", tags=["api-keys"])
 
 
 class CreateApiKeyRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
 
 
 class CreateApiKeyResponse(BaseModel):
     api_key_id: str
     name: str
     plain_key: str   # 仅此处返回一次
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
 
 
 class ApiKeyItem(BaseModel):
     api_key_id: str
     name: str
     status: str
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
     created_at: datetime
 
 
@@ -62,11 +71,11 @@ async def create_api_key(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.message)
 
 
-@router.get("", response_model=List[ApiKeyItem])
+@router.get("", response_model=list[ApiKeyItem])
 async def list_api_keys(
     user_id: str = Depends(get_current_user_id),
-    api_key_repo=Depends(get_api_key_repository),
-) -> List[ApiKeyItem]:
+    api_key_repo: ApiKeyRepository = Depends(get_api_key_repository),
+) -> list[ApiKeyItem]:
     """获取当前用户的所有 API Key"""
     api_keys = await api_key_repo.find_by_user(UserId.from_string(user_id))
     return [

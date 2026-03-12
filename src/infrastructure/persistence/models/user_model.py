@@ -1,13 +1,14 @@
 """User ORM 模型"""
-from datetime import datetime
+import uuid
+from datetime import UTC, datetime
+
 from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import DeclarativeBase
-import uuid
+
 from ..database import Base
 
 
-class UserModel(Base):  # type: ignore[misc]
+class UserModel(Base):
     """用户数据库模型"""
     __tablename__ = "users"
 
@@ -16,8 +17,8 @@ class UserModel(Base):  # type: ignore[misc]
     hashed_password = Column(String(255), nullable=False)
     username = Column(String(100), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None), onupdate=lambda: datetime.now(UTC).replace(tzinfo=None), nullable=False)
 
     def __repr__(self) -> str:
         return f"<UserModel(id={self.id}, email={self.email})>"

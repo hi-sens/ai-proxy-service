@@ -2,8 +2,8 @@
 import hashlib
 import secrets
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional
+from datetime import UTC, datetime
+
 from src.domain.api_key.aggregate import ApiKey
 from src.domain.api_key.repository import IApiKeyRepository
 from src.domain.shared.value_objects import UserId
@@ -14,7 +14,7 @@ class CreateApiKeyCommand:
     """创建 API Key 命令"""
     user_id: str
     name: str
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
 
 
 @dataclass
@@ -23,7 +23,7 @@ class CreateApiKeyResult:
     api_key_id: str
     name: str
     plain_key: str   # 仅此处返回一次明文
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
 
 
 class CreateApiKeyUseCase:
@@ -47,8 +47,7 @@ class CreateApiKeyUseCase:
         # 将带时区的 datetime 统一转换为 UTC naive datetime，避免 asyncpg 类型错误
         expires_at = command.expires_at
         if expires_at is not None and expires_at.tzinfo is not None:
-            from datetime import timezone
-            expires_at = expires_at.astimezone(timezone.utc).replace(tzinfo=None)
+            expires_at = expires_at.astimezone(UTC).replace(tzinfo=None)
 
         user_id = UserId.from_string(command.user_id)
         api_key = ApiKey.create(

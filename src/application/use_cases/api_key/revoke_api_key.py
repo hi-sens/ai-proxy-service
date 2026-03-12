@@ -1,8 +1,9 @@
 """撤销 API Key 用例"""
 from dataclasses import dataclass
+
 from src.domain.api_key.repository import IApiKeyRepository
-from src.domain.shared.value_objects import TokenId
 from src.domain.shared.exceptions import TokenNotFoundException
+from src.domain.shared.value_objects import TokenId
 
 
 @dataclass

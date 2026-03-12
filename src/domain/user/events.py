@@ -1,6 +1,7 @@
 """User领域事件"""
 from dataclasses import dataclass, field
 from datetime import datetime
+
 from ..shared.value_objects import UserId
 
 

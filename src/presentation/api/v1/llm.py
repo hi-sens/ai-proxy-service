@@ -1,12 +1,15 @@
 """LLM 代理路由 - 统一调用本地/云端模型"""
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
-from src.application.use_cases.llm.chat import ChatUseCase, ChatCommand
-from ..dependencies import get_chat_use_case
+
+from src.application.use_cases.llm.chat import ChatCommand, ChatUseCase
 from src.domain.shared.exceptions import TokenInvalidException, TokenRevokedException
+
+from ..dependencies import get_chat_use_case
 
 router = APIRouter(prefix="/api/v1/llm", tags=["llm"])
 
@@ -20,20 +23,20 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     model: str = Field(..., description="模型名称，如 ollama/qwen2.5:14b 或 claude-3-5-sonnet-20241022")
-    messages: List[Message]
+    messages: list[Message]
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(default=None, gt=0)
+    max_tokens: int | None = Field(default=None, gt=0)
     stream: bool = False
 
 
 class ChatResponse(BaseModel):
     content: str
     model: str
-    usage: Dict[str, Any] = {}
+    usage: dict[str, Any] = {}
 
 
 class ModelListResponse(BaseModel):
-    models: List[str]
+    models: list[str]
 
 
 def _extract_key(credentials: HTTPAuthorizationCredentials) -> str:

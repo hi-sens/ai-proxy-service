@@ -1,9 +1,8 @@
 """ApiKey 聚合值对象"""
-from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class ApiKeyStatus(str, Enum):
+class ApiKeyStatus(StrEnum):
     """API Key 状态"""
     ACTIVE = "active"
     REVOKED = "revoked"

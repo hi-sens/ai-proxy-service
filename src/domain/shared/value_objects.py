@@ -1,9 +1,8 @@
 """共享值对象 - 跨聚合使用的值对象"""
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Type
+from typing import TypeVar
 from uuid import UUID, uuid4
-
 
 T = TypeVar('T', bound='EntityId')
 
@@ -14,12 +13,12 @@ class EntityId:
     value: UUID
 
     @classmethod
-    def generate(cls: Type[T]) -> T:
+    def generate(cls: type[T]) -> T:
         """生成新ID"""
         return cls(value=uuid4())
 
     @classmethod
-    def from_string(cls: Type[T], id_str: str) -> T:
+    def from_string(cls: type[T], id_str: str) -> T:
         """从字符串创建"""
         return cls(value=UUID(id_str))
 

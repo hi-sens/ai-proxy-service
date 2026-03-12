@@ -12,16 +12,16 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Optional
+from collections.abc import AsyncIterator
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, StreamingResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.infrastructure.config.settings import get_settings
 from src.infrastructure.persistence.repositories.api_key_repository import ApiKeyRepository
-from src.domain.shared.exceptions import TokenInvalidException, TokenRevokedException
+
 from ..dependencies import get_api_key_repository
 
 router = APIRouter(tags=["anthropic-proxy"])
@@ -48,7 +48,7 @@ _HOP_BY_HOP_HEADERS = frozenset({
 # ---------------------------------------------------------------------------
 
 def _get_raw_key(
-    credentials: Optional[HTTPAuthorizationCredentials],
+    credentials: HTTPAuthorizationCredentials | None,
     request: Request,
 ) -> str:
     """从请求头提取明文 API Key，未提供则 401。"""
@@ -138,18 +138,17 @@ async def _proxy(
     upstream_path: str,
     request: Request,
     body: bytes,
-    anthropic_api_key: str,
-    anthropic_base_url: str,
-):
-    """核心透传：用 Anthropic 官方 Key 将请求转发到上游。"""
-    base = anthropic_base_url.rstrip("/")
+    api_key: str,
+    base_url: str,
+) -> StreamingResponse | JSONResponse:
+    base = base_url.rstrip("/")
     url = f"{base}/{upstream_path.lstrip('/')}"
-    headers = _build_proxy_headers(request, anthropic_api_key)
+    headers = _build_proxy_headers(request, api_key)
     params = dict(request.query_params)
     stream = _is_stream_request(request, body)
 
     if stream:
-        async def generate():
+        async def generate() -> AsyncIterator[bytes]:
             async with httpx.AsyncClient(timeout=None) as client:
                 async with client.stream(
                     method,
@@ -205,13 +204,14 @@ async def _proxy(
 @router.api_route(
     "/anthropic/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
+    response_model=None,
 )
 async def proxy_anthropic(
     path: str,
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     api_key_repo: ApiKeyRepository = Depends(get_api_key_repository),
-):
+) -> Response:
     """通用透传：验证系统用户 API Key 后，用 .env 中的 ANTHROPIC_API_KEY 转发到上游。
 
     客户端传入的是系统颁发的 API Key（sk-xxx），代理替换为真实 Anthropic Key 后转发。
@@ -246,6 +246,6 @@ async def proxy_anthropic(
         upstream_path=path,
         request=request,
         body=body,
-        anthropic_api_key=anthropic_api_key,
-        anthropic_base_url=anthropic_base_url,
+        api_key=anthropic_api_key,
+        base_url=anthropic_base_url,
     )

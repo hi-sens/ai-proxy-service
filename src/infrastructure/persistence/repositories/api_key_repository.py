@@ -1,13 +1,15 @@
 """ApiKey 仓储实现"""
-from typing import Optional, List
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.domain.api_key.aggregate import ApiKey
 from src.domain.api_key.repository import IApiKeyRepository
 from src.domain.api_key.value_objects import ApiKeyStatus
-from src.domain.shared.value_objects import TokenId, UserId, Timestamp
+from src.domain.shared.value_objects import Timestamp, TokenId, UserId
+
 from ..models.api_key_model import ApiKeyModel
 
 
@@ -31,21 +33,21 @@ class ApiKeyRepository(IApiKeyRepository):
 
         await self._session.commit()
 
-    async def find_by_id(self, api_key_id: TokenId) -> Optional[ApiKey]:
+    async def find_by_id(self, api_key_id: TokenId) -> ApiKey | None:
         """根据ID查找 API Key"""
         stmt = select(ApiKeyModel).where(ApiKeyModel.id == api_key_id.value)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
-    async def find_by_hash(self, key_hash: str) -> Optional[ApiKey]:
+    async def find_by_hash(self, key_hash: str) -> ApiKey | None:
         """根据哈希查找 API Key（用于鉴权）"""
         stmt = select(ApiKeyModel).where(ApiKeyModel.key_hash == key_hash)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
-    async def find_by_user(self, user_id: UserId) -> List[ApiKey]:
+    async def find_by_user(self, user_id: UserId) -> list[ApiKey]:
         """查找用户所有 API Key"""
         stmt = select(ApiKeyModel).where(ApiKeyModel.user_id == user_id.value)
         result = await self._session.execute(stmt)
@@ -75,7 +77,7 @@ class ApiKeyRepository(IApiKeyRepository):
 
     def _to_domain(self, model: ApiKeyModel) -> ApiKey:
         expires_raw = model.expires_at
-        expires_ts: Optional[Timestamp] = (
+        expires_ts: Timestamp | None = (
             Timestamp(value=datetime.fromisoformat(str(expires_raw)))
             if expires_raw is not None else None
         )

@@ -1,6 +1,6 @@
 """User仓储接口"""
 from abc import ABC, abstractmethod
-from typing import Optional
+
 from ..shared.value_objects import UserId
 from .aggregate import User
 from .value_objects import Email
@@ -19,12 +19,12 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def find_by_id(self, user_id: UserId) -> Optional[User]:
+    async def find_by_id(self, user_id: UserId) -> User | None:
         """根据ID查找用户"""
         ...
 
     @abstractmethod
-    async def find_by_email(self, email: Email) -> Optional[User]:
+    async def find_by_email(self, email: Email) -> User | None:
         """根据邮箱查找用户"""
         ...
 
@@ -34,6 +34,6 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def find_by_username(self, username: str) -> Optional[User]:
+    async def find_by_username(self, username: str) -> User | None:
         """根据用户名查找用户"""
         ...

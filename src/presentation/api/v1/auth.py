@@ -2,10 +2,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
-from src.application.use_cases.user.register_user import RegisterUserUseCase, RegisterUserCommand
-from src.application.use_cases.user.login_user import LoginUserUseCase, LoginUserCommand
-from ..dependencies import get_register_use_case, get_login_use_case
-from src.domain.shared.exceptions import UserAlreadyExistsException, InvalidCredentialsException
+
+from src.application.use_cases.user.login_user import LoginUserCommand, LoginUserUseCase
+from src.application.use_cases.user.register_user import RegisterUserCommand, RegisterUserUseCase
+from src.domain.shared.exceptions import InvalidCredentialsException, UserAlreadyExistsException
+
+from ..dependencies import get_login_use_case, get_register_use_case
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 

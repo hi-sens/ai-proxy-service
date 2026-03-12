@@ -1,9 +1,10 @@
 """用户注册用例"""
 from dataclasses import dataclass
+
+from src.domain.shared.exceptions import UserAlreadyExistsException
 from src.domain.user.aggregate import User
 from src.domain.user.repository import IUserRepository
 from src.domain.user.value_objects import Email
-from src.domain.shared.exceptions import UserAlreadyExistsException
 
 
 @dataclass
