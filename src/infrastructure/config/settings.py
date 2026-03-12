@@ -26,8 +26,9 @@ class Settings(BaseSettings):
     litellm_base_url: str = "http://localhost:4000"
     litellm_api_key: str = "sk-1234"
 
-    # Anthropic API Key（Claude）
+    # Anthropic API Key 和上游地址（Claude）
     anthropic_api_key: str = ""
+    anthropic_base_url: str = "https://api.anthropic.com"
 
     # API 模型的 base_url 映射（ollama/ 开头的模型自动路由，无需配置）
     # 格式：{"模型名": "base_url"}
